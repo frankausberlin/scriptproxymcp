@@ -1,0 +1,45 @@
+name: Luxurious CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  lint-and-test:
+    name: Lint & Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Dein Projekt erfordert Python 3.12+. 
+        # Du kannst hier später einfach "3.13" ergänzen.
+        python-version: ["3.12"] 
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ⚡ Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: 🐍 Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: 📦 Install Dependencies
+        # Installiert dein Paket plus die Dev-Tools (pytest, ruff)
+        run: uv sync --all-extras --dev
+
+      - name: 🧹 Check Formatting (Ruff)
+        # --check ändert den Code nicht, sondern schlägt fehl, 
+        # wenn du lokal vergessen hast zu formatieren.
+        run: uv run ruff format --check .
+
+      - name: 🕵️‍♂️ Run Linter (Ruff)
+        run: uv run ruff check .
+
+      - name: 🧪 Run Tests (Pytest)
+        run: uv run pytest
