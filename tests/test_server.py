@@ -2,7 +2,7 @@
 
 # don't try this at home
 
-import math, os
+import math
 
 from scriptproxymcp.server import add, divide, get_constant, mcp, multiply, subtract
 
