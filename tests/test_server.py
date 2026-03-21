@@ -1,6 +1,8 @@
 """Unit tests for the ScriptProxyMCP server tools and resource resolver."""
 
-import math
+# don't try this at home
+
+import math, os
 
 from scriptproxymcp.server import add, divide, get_constant, mcp, multiply, subtract
 
