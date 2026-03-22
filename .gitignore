@@ -191,3 +191,16 @@ pyrightconfig.json
 #!! ERROR: vscode is undefined. Use list command to see defined gitignore types !!#
 
 # End of https://www.toptal.com/developers/gitignore/api/python,linux,vscode
+
+# insert by 'Luxurious Python Stack'
+
+# volatile, agent-generated data
+SESSION.md
+
+# freestyle: here you can put whatever you want
+ignore/
+ign/
+ignored/
+ignored.txt
+
+# end of 'Luxurious Python Stack'
