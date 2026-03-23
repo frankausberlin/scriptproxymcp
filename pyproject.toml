@@ -21,3 +21,14 @@ dev = [
     "pytest>=9.0.2",
     "ruff>=0.15.7",
 ]
+
+[tool.bumpversion]
+current_version = "0.1.0"
+commit = true
+tag = true
+commit_args = "-m 'chore: bump version from {current_version} to {new_version}'"
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
