@@ -9,7 +9,6 @@ from unittest.mock import patch
 from scriptproxymcp.server import (
     DEFAULT_SCRIPTS_FOLDER,
     MCPScriptProxy,
-    get_scripts_folder,
 )
 
 
@@ -22,7 +21,7 @@ class TestGetScriptsFolder:
 
         with patch.dict(os.environ, {"SCRIPTS_FOLDER": env_var_value}):
             with patch("sys.argv", ["scriptproxymcp"]):
-                result = get_scripts_folder()
+                result = MCPScriptProxy.get_scripts_folder()
 
         assert result == env_var_value
 
@@ -32,7 +31,7 @@ class TestGetScriptsFolder:
 
         with patch.dict(os.environ, {"SCRIPTS_FOLDER": "/env/path"}):
             with patch("sys.argv", ["scriptproxymcp", cli_path]):
-                result = get_scripts_folder()
+                result = MCPScriptProxy.get_scripts_folder()
 
         assert result == cli_path
 
@@ -42,7 +41,7 @@ class TestGetScriptsFolder:
 
         with patch.dict(os.environ, {"SCRIPTS_FOLDER": "/env/path"}):
             with patch("sys.argv", ["scriptproxymcp", "--scripts-folder", cli_path]):
-                result = get_scripts_folder()
+                result = MCPScriptProxy.get_scripts_folder()
 
         assert result == cli_path
 
@@ -55,7 +54,7 @@ class TestGetScriptsFolder:
             "sys.argv",
             ["scriptproxymcp", positional_path, "--scripts-folder", flag_path],
         ):
-            result = get_scripts_folder()
+            result = MCPScriptProxy.get_scripts_folder()
 
         assert result == positional_path
 
@@ -63,7 +62,7 @@ class TestGetScriptsFolder:
         """Test that default fallback is used when no env var or CLI args."""
         with patch.dict(os.environ, {}, clear=True):
             with patch("sys.argv", ["scriptproxymcp"]):
-                result = get_scripts_folder()
+                result = MCPScriptProxy.get_scripts_folder()
 
         assert result == DEFAULT_SCRIPTS_FOLDER
 
@@ -73,7 +72,7 @@ class TestGetScriptsFolder:
 
         with patch.dict(os.environ, {"SCRIPTS_FOLDER": env_path}):
             with patch("sys.argv", ["scriptproxymcp"]):
-                result = get_scripts_folder()
+                result = MCPScriptProxy.get_scripts_folder()
 
         assert result == env_path
 
