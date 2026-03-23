@@ -1,61 +1,183 @@
 # Script Proxy MCP
 
-An MCP (Model Context Protocol) server that makes Bash scripts available as MCP tools and exposes skills as MCP resources.
+ScriptProxyMCP is an MCP (Model Context Protocol) server that turns local scripts into MCP tools.
 
-## Features
+## What it does
 
-- **Automatic Detection**: Scans the `scripts/` directory for `.sh` files.
-
-
-## Run the server locally
-
-The server runs over STDIO by default.
-
-```bash
-uv run src/scriptproxymcp/server.py
-```
+- Scans a folder for supported scripts
+- Extracts MCP metadata from those scripts
+- Registers each valid script as a tool
+- Runs over STDIO, so it can be used directly by MCP clients and the MCP Inspector
 
 ## Requirements
 
 - Python 3.12+
-- `mcp` package (Model Context Protocol)
-- Bash shell
+- `uv`
+- Bash for shell-based demo scripts
 
-## Use it with MCP Inspector
+## Local development
 
-For the MCP Inspector, use the Python/STDIO setup described in the official docs:
-
-- Command: `uv [--directory <path-to-project>] run src/scriptproxymcp/server.py`
-
-In the Inspector, that maps to the command and arguments fields in the STDIO connection pane.
-
-If you launch the Inspector directly from the project directory, the equivalent command is:
+Install dependencies once:
 
 ```bash
-npx @modelcontextprotocol/inspector uv run src/scriptproxymcp/server.py
+uv sync
 ```
 
-## Two Operation Modes
+Run the server from the project directory:
 
-### Development Mode (Local)
+```bash
+uv run scriptproxymcp
+```
+
+You can also pass a scripts folder explicitly:
+
+```bash
+uv run scriptproxymcp ./demo/arithmeticmcp
+```
+
+The server also accepts the named argument:
+
+```bash
+uv run scriptproxymcp --scripts-folder ./demo/arithmeticmcp
+```
+
+## MCP Inspector
+
+If you want to test the server manually with the MCP Inspector:
+
+```bash
+npx @modelcontextprotocol/inspector uv run scriptproxymcp ./demo/arithmeticmcp
+```
+
+## Two operation modes
+
+### Development mode (local checkout)
+
+Use this while actively working on the repository.
+
 ```json
 {
   "command": "uv",
   "args": ["run", "--directory", "/path/to/project", "scriptproxymcp", "/path/to/scripts"]
 }
 ```
-- **Use case**: Active development, changes to scripts are picked up immediately
-- **Requires**: `uv sync` once to set up dependencies
-- **Note**: `uv run` reads the local `pyproject.toml` and knows which dependencies to install
 
-### Production Mode (PyPI Release)
+- **Use case:** active development
+- **Behavior:** uses the local checkout
+- **Benefit:** code changes are picked up immediately
+
+### Production mode (published package)
+
+Use this when the package is published and no local checkout is needed.
+
 ```json
 {
   "command": "uvx",
   "args": ["scriptproxymcp", "/path/to/scripts"]
 }
 ```
-- **Use case**: Published release, no local checkout needed
-- **Requires**: Package published to PyPI
-- **Note**: `uvx` downloads and runs the package directly from PyPI
 
+- **Use case:** installed release usage
+- **Behavior:** downloads and runs the published package
+- **Benefit:** simple setup for end users
+
+## Release workflow
+
+This project uses `bump-my-version` for releases.
+
+### Important rule
+
+Do **not** edit the version manually in [`pyproject.toml`](pyproject.toml).
+
+Why:
+
+- [`[project].version`](pyproject.toml:1) and [`[tool.bumpversion].current_version`](pyproject.toml:28) must stay in sync
+- the Git commit and the Git tag must match the same release point
+- manual edits are easy to forget and easy to break
+
+### Normal release flow
+
+If your working tree is clean, use one of these commands:
+
+```bash
+uv run bump-my-version bump patch
+uv run bump-my-version bump minor
+uv run bump-my-version bump major
+```
+
+Example:
+
+```bash
+uv run bump-my-version bump minor
+```
+
+That will:
+
+1. update the version in [`pyproject.toml`](pyproject.toml)
+2. create a release commit
+3. create a Git tag such as `v0.4.0` if your tag configuration uses that format
+
+After that, push both the branch and the tag:
+
+```bash
+git push
+git push --tags
+```
+
+### What a clean working tree means
+
+Before running `bump-my-version`, `git status` should look like this:
+
+```bash
+git status
+```
+
+Expected result:
+
+```text
+nothing to commit, working tree clean
+```
+
+If there are already modified files, `bump-my-version` may abort because it wants to create a clean, predictable release commit.
+
+### Why two GitHub Actions run after a release
+
+After a successful release you usually push two things:
+
+1. the new commit on [`master`](.github/workflows/ci.yml:5)
+2. the new tag like `v0.3.0` matched by [`v*`](.github/workflows/release.yml:7)
+
+That triggers two workflows:
+
+- [`Luxurious CI`](.github/workflows/ci.yml:1) runs for the branch push
+- [`Publish Release`](.github/workflows/release.yml:1) runs for the tag push
+
+This is expected behavior.
+
+## Troubleshooting
+
+### `Git working directory is not clean`
+
+Cause:
+
+- you already have local changes
+- or a previous failed bump left modified files behind
+
+Fix:
+
+1. inspect with `git status`
+2. either commit the unrelated work first
+3. or discard the accidental partial bump changes
+4. then rerun `bump-my-version`
+
+### `git commit` fails during `bump-my-version`
+
+Check the bump configuration in [`pyproject.toml`](pyproject.toml:28).
+
+Use:
+
+```toml
+message = "chore: bump version from {current_version} to {new_version}"
+```
+
+Do **not** use a `commit_args` value that injects another `-m`, because `bump-my-version` already builds the commit command itself.
