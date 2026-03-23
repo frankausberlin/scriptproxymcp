@@ -112,7 +112,8 @@ class MCPScriptProxy:
             logger.info(f"Registered tool: {script.tool_name}")
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Entry point for the MCP server."""
     scripts_folder = MCPScriptProxy.get_scripts_folder()
     server = MCPScriptProxy(scripts_folder)
     server.scan_folders()
@@ -120,3 +121,7 @@ if __name__ == "__main__":
     if server.mcp is None:
         raise RuntimeError("Failed to initialize MCP server")
     server.mcp.run()
+
+
+if __name__ == "__main__":
+    main()

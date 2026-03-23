@@ -35,3 +35,27 @@ If you launch the Inspector directly from the project directory, the equivalent 
 npx @modelcontextprotocol/inspector uv run src/scriptproxymcp/server.py
 ```
 
+## Two Operation Modes
+
+### Development Mode (Local)
+```json
+{
+  "command": "uv",
+  "args": ["run", "--directory", "/path/to/project", "scriptproxymcp", "/path/to/scripts"]
+}
+```
+- **Use case**: Active development, changes to scripts are picked up immediately
+- **Requires**: `uv sync` once to set up dependencies
+- **Note**: `uv run` reads the local `pyproject.toml` and knows which dependencies to install
+
+### Production Mode (PyPI Release)
+```json
+{
+  "command": "uvx",
+  "args": ["scriptproxymcp", "/path/to/scripts"]
+}
+```
+- **Use case**: Published release, no local checkout needed
+- **Requires**: Package published to PyPI
+- **Note**: `uvx` downloads and runs the package directly from PyPI
+
