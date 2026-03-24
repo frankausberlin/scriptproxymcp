@@ -434,7 +434,7 @@ class MCPScriptProxy:
 
     def _register_skill_resources(self) -> None:
         """Register skill resources with the MCP server."""
-        
+
         def register_skill(s: SkillInfo) -> None:
             # Resource for the skill's SKILL.md
             @self.mcp.resource(f"skills://{s.name}/SKILL.md")
@@ -476,7 +476,7 @@ class MCPScriptProxy:
 
     def _register_prompts(self) -> None:
         """Register prompts from .prompt files."""
-        
+
         def register_prompt(p: PromptInfo) -> None:
             @self.mcp.prompt(name=p.name, description=p.description)
             def prompt_func() -> str:
@@ -489,9 +489,11 @@ class MCPScriptProxy:
 
     def _register_skill_prompts(self) -> None:
         """Register prompts generated from skills."""
-        
+
         def register_skill_prompt(s: SkillInfo, text: str) -> None:
-            @self.mcp.prompt(name=f"{s.name}_skill", description=f"Use the {s.name} skill")
+            @self.mcp.prompt(
+                name=f"{s.name}_skill", description=f"Use the {s.name} skill"
+            )
             def prompt_func() -> str:
                 return text
 
