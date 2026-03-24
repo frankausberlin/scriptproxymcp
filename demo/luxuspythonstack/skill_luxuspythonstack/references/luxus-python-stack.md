@@ -174,6 +174,7 @@ ignore/
 ign/
 ignored/
 ignored.txt
+ingored.md
 # end of 'Luxurious Python Stack'    
 EOF
     # 7. Final Sync & Success message

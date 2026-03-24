@@ -1,5 +1,4 @@
-# Arithmetic MCP Server
+# An arithmetic server that provides basic math operations as tools.
+## Usage:
 
-This server provides basic arithmetic operations including addition, subtraction, multiplication, division, and exponentiation.
-
-Use these tools when you need to perform mathematical calculations.
+Use this server for calculations with add, subtract, multiply, divide, and power operations.

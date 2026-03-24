@@ -1,9 +1,9 @@
 #!/bin/bash
-#mcp@name           power
-#mcp@description    A simple tool to raise a number to a power
-#mcp@param          base: int | float
-#mcp@param          exponent: int | float
-#mcp@return         int | float | None
+#mcp@name:          power
+#mcp@description:   A simple tool to raise a number to a power
+#mcp@param:         base: int | float
+#mcp@param:         exponent: int | float
+#mcp@return:        int | float | None
 
 # Check if exactly two arguments are provided
 if [ "$#" -ne 2 ]; then

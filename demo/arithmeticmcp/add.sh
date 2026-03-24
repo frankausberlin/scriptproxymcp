@@ -1,9 +1,9 @@
 #!/bin/bash
-#mcp@name           add
-#mcp@description    A simple tool to add two numbers
-#mcp@param          a: int | float
-#mcp@param          b: int | float
-#mcp@return         int | float | None
+#mcp@name:          add
+#mcp@description:   A simple tool to add two numbers
+#mcp@param:         a: int | float
+#mcp@param:         b: int | float
+#mcp@return:        int | float | None
 
 # Check if exactly two arguments are provided
 if [ "$#" -ne 2 ]; then
