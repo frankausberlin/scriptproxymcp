@@ -5,7 +5,11 @@ This package serves as an MCP server proxy to provide local scripts (Python, Bas
 
 ## 🏗️ Architecture & Conventions
 - **Core Logic:** Located in `src/scriptproxymcp/`.
-- **Module structure:** `scriptfolder.py` (scanning) and `scriptexecute.py` (execution).
+- **Module structure:**
+  - `scriptfolder.py` - scanning for scripts (ScriptFolder class)
+  - `skillfolder.py` - scanning for skills (SkillFolder class)
+  - `scriptexecute.py` - script execution
+  - `datatypes.py` - type definitions (ScriptInfo, SkillInfo)
 - **Import style:** We use the `__init__.py` as a facade. External imports should run via the main package.
 - **Typing:** Strict type hinting is desired (Mypy compatible).
 

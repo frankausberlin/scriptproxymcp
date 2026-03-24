@@ -4,10 +4,27 @@ ScriptProxyMCP is an MCP (Model Context Protocol) server that turns local script
 
 ## What it does
 
-- Scans a folder for supported scripts
-- Extracts MCP metadata from those scripts
-- Registers each valid script as a tool
+- **Scripts as Tools:** Scans a folder recursively for `.sh` files with `#mcp@` metadata and registers them as MCP tools.
+- **Skills as Resources:** Scans subfolders for `SKILL.md` and exposes them as MCP resources.
+- **Prompts:** Scans for `.prompt` files to expose as MCP prompts.
 - Runs over STDIO, so it can be used directly by MCP clients and the MCP Inspector
+
+## Architecture
+
+```
+<server_folder>/
+├── mcpproxy.md              # Required server configuration
+├── *.sh                     # MCP tools (if #mcp@ metadata present)
+├── *.prompt                 # MCP prompts
+└── <skill_folder>/
+    └── SKILL.md             # Skill (exposed as resource)
+```
+
+- **Folder name** = Server name
+- **mcpproxy.md** = Server description (required)
+- **\*.sh** (recursive) = Tools with `#mcp@name:`, `#mcp@description:`, `#mcp@param:` metadata
+- **Subfolders with SKILL.md** = Skills (exposed as resources at `skills://<skill_name>/...`)
+- **\*.prompt files** = Prompts
 
 ## Requirements
 
@@ -26,27 +43,51 @@ uv sync
 Run the server from the project directory:
 
 ```bash
-uv run scriptproxymcp
+uv run scriptproxymcp ./demo
 ```
 
-You can also pass a scripts folder explicitly:
+The server accepts a positional argument or `--server-folder`:
 
 ```bash
-uv run scriptproxymcp ./demo/arithmeticmcp
+uv run scriptproxymcp ./demo
+uv run scriptproxymcp --server-folder ./demo
 ```
 
-The server also accepts the named argument:
+Environment variable `SERVER_FOLDER` is also supported:
 
 ```bash
-uv run scriptproxymcp --scripts-folder ./demo/arithmeticmcp
+SERVER_FOLDER=./demo uv run scriptproxymcp
 ```
+
+### Script Metadata
+
+Scripts need `#mcp@` comments to be registered as tools:
+
+```bash
+#!/bin/bash
+#mcp@name: add
+#mcp@description: Add two numbers
+#mcp@param: a: number
+#mcp@param: b: number
+```
+
+### Skills as Resources
+
+Skills are subfolders containing a `SKILL.md` file. They are exposed as MCP resources:
+
+```
+skills://<skill_name>/SKILL.md     → Main SKILL.md file
+skills://<skill_name>/<subpath>   → Any file within the skill folder
+```
+
+Within skill folders, the server scans the `scripts/` subfolder for `.sh` files with `#mcp@` metadata. These scripts are registered as MCP tools with a `{skill_name}_{script_name}` naming convention.
 
 ## MCP Inspector
 
 If you want to test the server manually with the MCP Inspector:
 
 ```bash
-npx @modelcontextprotocol/inspector uv run scriptproxymcp ./demo/arithmeticmcp
+npx @modelcontextprotocol/inspector uv run scriptproxymcp ./demo
 ```
 
 ## Two operation modes
@@ -58,7 +99,7 @@ Use this while actively working on the repository.
 ```json
 {
   "command": "uv",
-  "args": ["run", "--directory", "/path/to/project", "scriptproxymcp", "/path/to/scripts"]
+  "args": ["run", "--directory", "/path/to/project", "scriptproxymcp", "/path/to/server"]
 }
 ```
 
@@ -73,7 +114,7 @@ Use this when the package is published and no local checkout is needed.
 ```json
 {
   "command": "uvx",
-  "args": ["scriptproxymcp", "/path/to/scripts"]
+  "args": ["scriptproxymcp", "/path/to/server"]
 }
 ```
 

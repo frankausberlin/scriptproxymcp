@@ -14,7 +14,7 @@ class ScriptFolder:
         self.isScanned = False
         self.isValid = False
         self.path = path if isinstance(path, Path) else Path(path)
-        self.scripts = []
+        self.scripts: list[ScriptInfo] = []
         self.name = self.path.name
 
     def scan(self):
