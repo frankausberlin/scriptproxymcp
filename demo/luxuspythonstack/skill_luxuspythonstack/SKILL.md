@@ -78,10 +78,13 @@ direnv allow   # already done by pyinit, but run if .envrc exists
 
 ### 2. Environment Management
 
+Naming convention:
+The ds stands for data science, the 12 comes from Python 3.12
+
 **Activate a Mamba environment (Level 1)**:
 ```bash
-act ds312          # activates and saves to ~/.startenv
-mamba activate ds312  # without saving
+act ds12          # activates and saves to ~/.startenv
+mamba activate ds12  # without saving
 ```
 
 **Work with project environments (Level 2)**:
