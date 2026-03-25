@@ -76,7 +76,6 @@ My workflow is based on a five-level concept:
   - A bundled `pyinit.sh` script for deterministic project initialization
   - Session workflow: reading `AGENTS.md` on start, writing `SESSION.md` on end
   - Quick command reference for all daily operations
-  - Install location: `~/.kilocode/skills/luxus-python-stack/`
 
 ⚠️ **Important Note Regarding the "Data Science Level":**<br>
 > <b><font color=blue>It doesn't necessarily have to be data science. Any domain is possible here;</font></b> it just happens to be mine.<br>
@@ -169,6 +168,7 @@ EOF
 # insert by 'Luxurious Python Stack'
 # volatile, agent-generated data
 SESSION.md
+plans/
 # freestyle: here you can put whatever you want
 ignore/
 ign/
