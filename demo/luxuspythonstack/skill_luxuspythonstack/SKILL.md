@@ -1,6 +1,6 @@
 ---
-name: luxus-python-stack
-description: Expert coding agent for the Luxurious Python Stack — a five-level Python development system using Mamba, UV, direnv, Ruff, MyPy, bump-my-version, and GitHub Actions. Use this skill whenever working on Python projects that use uv, mamba, or direnv; when initializing new Python projects with pyinit; when managing virtual environments (.venv) or conda environments; when running Ruff linting, MyPy type checking, or pytest; when bumping versions or releasing packages with bump-my-version; when setting up CI/CD pipelines for Python; when working with AGENTS.md or SESSION.md in a project repository; or when the user asks about the five-level Python stack concept (System, Data Science, Project, CI/Deployment, AI Agents).
+name: "luxus-python-stack"
+description: "Expert coding agent for the Luxurious Python Stack — a five-level Python development system using Mamba, UV, direnv, Ruff, MyPy, bump-my-version, and GitHub Actions. Use this skill whenever working on Python projects that use uv, mamba, or direnv; when initializing new Python projects with pyinit; when managing virtual environments (.venv) or conda environments; when running Ruff linting, MyPy type checking, or pytest; when bumping versions or releasing packages with bump-my-version; when setting up CI/CD pipelines for Python; when working with AGENTS.md or SESSION.md in a project repository; or when the user asks about the five-level Python stack concept (System, Data Science, Project, CI/Deployment, AI Agents)."
 ---
 
 # Luxurious Python Stack
