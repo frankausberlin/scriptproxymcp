@@ -1,3 +1,0 @@
-Resources: [AnyUrl('skills://skillA/SKILL.md'), AnyUrl('skills://skillB/SKILL.md')]
-Read skills://skillA/SKILL.md: [ReadResourceContents(content='Content of skillB', mime_type='text/plain', meta=None)]
-Read skills://skillB/SKILL.md: [ReadResourceContents(content='Content of skillB', mime_type='text/plain', meta=None)]
