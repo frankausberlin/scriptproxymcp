@@ -34,6 +34,21 @@ This package serves as an MCP server proxy to provide local scripts (Python, Bas
 3. When completing a task, write a new "SESSION.md" file with a **new summary** of the current session.
 4. For releases, prefer a clean working tree and use `uv run bump-my-version bump <patch|minor|major>` instead of editing versions by hand.
 
+## 🐞 Debugging Protocol (Level 2)
+When encountering errors, test failures, or unexpected behavior, follow this structured debugging approach:
+
+1. **Test-Driven Debugging:** Do not guess. Write or isolate a failing test first.
+   - Run specific tests with stdout enabled: `uv run pytest -k <test_name> -s`
+   - The `-s` flag is crucial so you can read `print()` statements and logs in the terminal output.
+2. **Logging over Printing:**
+   - This project uses `colorlog` (installed via dev-dependencies).
+   - For complex state tracking, configure a basic logger instead of scattering `print()` statements, as logs provide module context and timestamps.
+3. **Traceback Analysis:**
+   - Always read the FULL traceback. Identify if the error originates from the core logic (`src/`) or a third-party dependency.
+   - If a third-party library throws an error, verify the installed version with `uv pip list` or check the `pyproject.toml`.
+4. **Interactive State (If supported):**
+   - If your agent framework supports interactive code execution, you may use `breakpoint()` (standard `pdb`) to inspect local variables, but ensure you step through or exit properly so the process doesn't hang.
+
 ## 🧑‍🔧 Troubleshooting
 - If tests are failing, check the error messages carefully. They often indicate which function or module is causing the issue.
 - For import errors, ensure that you are importing from the main package and not directly from submodules.

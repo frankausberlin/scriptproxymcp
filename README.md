@@ -37,7 +37,7 @@ Each MCP server folder must contain a mcpproxy.md file:
 
 ## Demo server
 
-This project includes two demo servers:
+This project includes a demo server:
 
 ### Arithmetic MCP server
 
@@ -47,13 +47,6 @@ Provides basic arithmetic operations (addition, subtraction, multiplication, div
 uv run scriptproxymcp ./demo/arithmeticmcp
 ```
 
-### LuxuryPythonStack MCP server
-
-Provides tools and resources for the Luxurious Python Stack workflow.
-
-```shell
-uv run scriptproxymcp ./demo/luxuspythonstack
-```
 
 ## Local development
 
@@ -66,18 +59,14 @@ uv sync
 Run a demo server:
 
 ```shell
-# Arithmetic tools server
 uv run scriptproxymcp ./demo/arithmeticmcp
-
-# LuxuryPythonStack server
-uv run scriptproxymcp ./demo/skill_luxuspythonstack
 ```
 
 The server accepts a positional argument or “--server-folder”:
 
 ```shell
 uv run scriptproxymcp ./demo/arithmeticmcp
-uv run scriptproxymcp --server-folder ./demo/skill_luxuspythonstack
+uv run scriptproxymcp --server-folder ./demo/arithmeticmcp
 ```
 
 The environment variable “SERVER_FOLDER” is also supported:

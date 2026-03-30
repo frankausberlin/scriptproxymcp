@@ -192,8 +192,6 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,linux,vscode
 
-# insert by 'Luxurious Python Stack'
-
 # volatile, agent-generated data
 SESSION.md
 
@@ -204,5 +202,4 @@ ignored/
 ignored.txt
 ignored.md
 
-# end of 'Luxurious Python Stack'
 plans/
