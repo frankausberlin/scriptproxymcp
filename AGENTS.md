@@ -14,13 +14,21 @@ This package serves as an MCP server proxy to provide local scripts (Python, Bas
 - **Typing:** Strict type hinting is desired. `basedpyright` is the primary type checker.
 - **Logging:** Prefer structured logging with `colorlog` over ad-hoc `print()` debugging.
 
-## 🛠️ Tooling (information level)
-- **Package manager:** The project uses `uv`. For dependencies please use `uv add`.
-- **Quality:** `ruff` for linting/formatting, `basedpyright` for types, `pytest` for tests.
-- **Task runner:** Use `just` recipes as the primary command interface.
-- **Hooks:** `pre-commit` is used for local quality checks.
-- **Versioning:** `bump-my-version` is used for releases. **Never change versions manually in `pyproject.toml`** - doing so causes version inconsistencies between `[project].version` and `[tool.bumpversion].current_version`.
-- **bump-my-version config:** Use `message = "..."` in `[tool.bumpversion]`. Do **not** use `commit_args = "-m ..."`, because `bump-my-version` already manages the commit message internally and this can break release commits.
+## 🛠️ Stack & Tooling (CRITICAL RULES)
+This project is strictly managed by `uv`. **Do not use `pip`, `poetry`, or standard `venv` commands.**
+
+1. **Dependencies:**
+   - Add packages: `uv add <package>`
+   - Add dev tools: `uv add --dev <package>`
+   - Sync environment: `uv sync`
+2. **Execution:** In scripts, automation, and CI, ALWAYS prefix commands with `uv run` to guarantee reproducibility (e.g., `uv run ruff check .`). In an interactive terminal with `direnv`-activated `.venv`, direct commands are acceptable.
+3. **Quality Gate:**
+   - Linting & Formatting: `uv run ruff check .` and `uv run ruff format --check .`
+   - Type Checking: `uv run basedpyright`
+   - Testing: `uv run pytest`
+   - Unified gate: `just check`
+4. **Versioning:** `bump-my-version` is used for releases. **Never change versions manually in `pyproject.toml`** - doing so causes version inconsistencies between `[project].version` and `[tool.bumpversion].current_version`.
+5. **bump-my-version config:** Use `message = "..."` in `[tool.bumpversion]`. Do **not** use `commit_args = "-m ..."`, because `bump-my-version` already manages the commit message internally and this can break release commits.
 
 ## 📜 Best practices for this repo
 1. **New tools:** When a new script execution feature is added, the tool definition in `scriptexecute.py` must be dynamically generated.
@@ -31,13 +39,18 @@ This package serves as an MCP server proxy to provide local scripts (Python, Bas
 - Currently only support for Python and shell scripts.
 - Sandboxing of the subprocesses is still being planned.
 
-## 🧑‍💻 Workflow
-1. Read `AGENTS.md` first for project-specific rules.
-2. Read `SESSION.md` at the beginning of each task to restore the last session state.
-3. Run `uv sync` before working if dependencies may have changed.
-4. Use `just check` as the primary local quality gate before finishing significant work.
-5. When completing a task, write a new `SESSION.md` file with a summary of the current session.
-6. For releases, prefer a clean working tree and use `just bump patch|minor|major` instead of editing versions by hand.
+## 🧑‍💻 The "Vibe Coding" Workflow (Session Lifecycle)
+As an AI Agent, you must adhere to the following session state management:
+
+1. **Initialization:** At the absolute beginning of your task, read `SESSION.md` (if it exists) to understand the context, recent changes, and current roadmap. Then run `uv sync` to guarantee the environment is current.
+2. **Execution:** Perform your coding tasks, run tests, and ensure `just check` passes without errors.
+3. **Finalization:** Before ending your interaction or completing the task, **overwrite** `SESSION.md` with a concise summary of what was just achieved, any open issues, and the immediate next steps.
+
+Quick reference:
+- Read context: `cat AGENTS.md && cat SESSION.md 2>/dev/null`
+- Sync env: `uv sync`
+- Full gate: `just check`
+- Release: `just bump patch|minor|major` then `git push origin main --tags`
 
 ## 🐞 Debugging Protocol (Level 2)
 When encountering errors, test failures, or unexpected behavior, follow this structured debugging approach:
@@ -55,6 +68,8 @@ When encountering errors, test failures, or unexpected behavior, follow this str
    - If your agent framework supports interactive code execution, you may use `breakpoint()` (standard `pdb`) to inspect local variables, but ensure you step through or exit properly so the process doesn't hang.
 
 ## 🧑‍🔧 Troubleshooting
-- If tests are failing, check the error messages carefully. They often indicate which function or module is causing the issue.
+- **ModuleNotFoundError:** You probably forgot `uv run` or need to run `uv sync`.
+- **Test Failures:** Prioritize fixing core logic in `src/` over altering the tests, unless the tests are explicitly flawed.
+- **Linting errors:** Run `uv run ruff check --fix .` before attempting manual formatting fixes.
 - For import errors, ensure that you are importing from the main package and not directly from submodules.
 - If you encounter issues with subprocess calls, verify that the arguments are properly validated and that the scripts being called exist in the expected locations.

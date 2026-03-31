@@ -20,7 +20,7 @@ typecheck:
 	uv run basedpyright
 
 test:
-	uv run pytest tests/ -v
+	uv run pytest tests/ -v --cov=src --cov-report=term-missing
 
 # === Release Workflow ===
 bump level="patch":
@@ -31,7 +31,7 @@ run:
 	uv run scriptproxymcp
 
 dev:
-	uv run pytest tests/ -v --tb=short
+	uv run pytest tests/ -v --tb=short --cov=src --cov-report=term-missing
 
 sync:
 	uv sync

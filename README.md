@@ -1,5 +1,7 @@
 # Script Proxy MCP
 
+[![Luxurious CI](https://github.com/frankausberlin/scriptproxymcp/actions/workflows/ci.yml/badge.svg)](https://github.com/frankausberlin/scriptproxymcp/actions/workflows/ci.yml)
+
 ScriptProxyMCP is a Model Context Protocol (MCP) server that turns local scripts into MCP tools.
 
 ## What it does

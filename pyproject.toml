@@ -1,7 +1,7 @@
 [project]
 name = "scriptproxymcp"
 version = "0.3.0"
-description = "Add your description here"
+description = "MCP server proxy that exposes local scripts (Python, Bash, etc.) as tools for LLMs"
 readme = "README.md"
 authors = [
     { name = "Frank Bloecher", email = "frankbloecher@gmail.com" }
@@ -26,6 +26,7 @@ dev = [
     "colorlog>=6.8.2",
     "bump-my-version>=0.20.0",
     "pre-commit>=4.3.0",
+    "pytest-cov>=7.1.0",
 ]
 
 [tool.bumpversion]
