@@ -7,19 +7,52 @@ import os
 import tempfile
 from pathlib import Path
 
-from scriptproxymcp.server import MCP_PROXY_CONFIG, MCPScriptProxy
+import pytest
+
+from scriptproxymcp.server import (
+    DEFAULT_SERVER_FOLDER,
+    MCP_PROXY_CONFIG,
+    MCPScriptProxy,
+)
 
 
 class TestMCPScriptProxyInit:
     """Tests for MCPScriptProxy initialization."""
 
-    def test_default_folder_path(self) -> None:
-        """Test that default folder path is set correctly."""
+    def test_default_folder_path(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test default folder path uses get_server_folder when no folder provided."""
+        from scriptproxymcp.server import MCPScriptProxy
+
+        # Mock get_server_folder to return a known path
+        expected_path = "/fake/test/path"
+        monkeypatch.setattr(MCPScriptProxy, "get_server_folder", lambda: expected_path)
+
+        server = MCPScriptProxy()
+        assert str(server.folder_path) == expected_path
+
+    def test_default_folder_is_module_relative(self) -> None:
+        """DEFAULT_SERVER_FOLDER must be module-relative, not CWD-relative.
+
+        Regression guard: changing CWD must not affect the default path.
+        """
+        import scriptproxymcp.server as server_module
+
+        default = Path(DEFAULT_SERVER_FOLDER)
+        # The default path must be derived from the module file location,
+        # not from the current working directory.
+        module_root = Path(server_module.__file__).parent.parent.parent
+        assert default == module_root / "demo" / "arithmeticmcp", (
+            "DEFAULT_SERVER_FOLDER must be relative to the module, not CWD"
+        )
+
+        # Verify the path stays stable even when CWD changes.
         with tempfile.TemporaryDirectory() as tmp:
-            os.chdir(tmp)
-            server = MCPScriptProxy()
-            # Default is ./demo/arithmeticmcp
-            assert server.folder_path.name == "arithmeticmcp"
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(tmp)
+                assert Path(DEFAULT_SERVER_FOLDER) == default
+            finally:
+                os.chdir(original_cwd)
 
     def test_custom_folder_path(self, tmp_path: Path) -> None:
         """Test that custom folder path is set correctly."""

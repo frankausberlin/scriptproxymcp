@@ -3,39 +3,38 @@ name: Publish Release
 on:
   push:
     tags:
-      # Der Praktikant schläft, bis du einen Git-Tag pushst, der mit "v" beginnt.
-      - "v*" 
+      - "v*"
+  workflow_dispatch:
 
 jobs:
   build-and-publish:
     name: Build & Publish
     runs-on: ubuntu-latest
     
-    # Das hier ist die Magie für Trusted Publishing (OIDC)!
     permissions:
-      id-token: write  # Zwingend für PyPI
-      contents: write  # Zwingend für GitHub Releases
+      id-token: write
+      contents: write
 
     steps:
-      - name: 📥 Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: ⚡ Install uv
+      - name: Install uv
         uses: astral-sh/setup-uv@v5
 
-      - name: 🐍 Set up Python
+      - name: Set up Python
         run: uv python install 3.12
 
-      - name: 🏗️ Build Package
-        # uv baut in Sekundenbruchteilen die .whl und .tar.gz in den Ordner /dist
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Build package
         run: uv build
 
-      - name: 🚀 Publish to PyPI
-        # Die offizielle PyPI-Action. Erkennt automatisch den OIDC-Token.
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
 
-      - name: 📦 Create GitHub Release
-        # Erstellt den Release auf GitHub, hängt die Dateien an und generiert Release Notes!
+      - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*

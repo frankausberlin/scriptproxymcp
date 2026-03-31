@@ -11,11 +11,14 @@ This package serves as an MCP server proxy to provide local scripts (Python, Bas
   - `scriptexecute.py` - script execution
   - `datatypes.py` - type definitions (ScriptInfo, SkillInfo)
 - **Import style:** We use the `__init__.py` as a facade. External imports should run via the main package.
-- **Typing:** Strict type hinting is desired (Mypy compatible).
+- **Typing:** Strict type hinting is desired. `basedpyright` is the primary type checker.
+- **Logging:** Prefer structured logging with `colorlog` over ad-hoc `print()` debugging.
 
 ## 🛠️ Tooling (information level)
 - **Package manager:** The project uses `uv`. For dependencies please use `uv add`.
-- **Quality:** `ruff` for linting/formatting, `mypy` for types, `pytest` for tests.
+- **Quality:** `ruff` for linting/formatting, `basedpyright` for types, `pytest` for tests.
+- **Task runner:** Use `just` recipes as the primary command interface.
+- **Hooks:** `pre-commit` is used for local quality checks.
 - **Versioning:** `bump-my-version` is used for releases. **Never change versions manually in `pyproject.toml`** - doing so causes version inconsistencies between `[project].version` and `[tool.bumpversion].current_version`.
 - **bump-my-version config:** Use `message = "..."` in `[tool.bumpversion]`. Do **not** use `commit_args = "-m ..."`, because `bump-my-version` already manages the commit message internally and this can break release commits.
 
@@ -29,10 +32,12 @@ This package serves as an MCP server proxy to provide local scripts (Python, Bas
 - Sandboxing of the subprocesses is still being planned.
 
 ## 🧑‍💻 Workflow
-1. **SESSION.md** is a volatile file that contains the **summary of the last session**.
-2. Read the “SESSION.md” at the beginning of each task to get the summary of the last session.
-3. When completing a task, write a new "SESSION.md" file with a **new summary** of the current session.
-4. For releases, prefer a clean working tree and use `uv run bump-my-version bump <patch|minor|major>` instead of editing versions by hand.
+1. Read `AGENTS.md` first for project-specific rules.
+2. Read `SESSION.md` at the beginning of each task to restore the last session state.
+3. Run `uv sync` before working if dependencies may have changed.
+4. Use `just check` as the primary local quality gate before finishing significant work.
+5. When completing a task, write a new `SESSION.md` file with a summary of the current session.
+6. For releases, prefer a clean working tree and use `just bump patch|minor|major` instead of editing versions by hand.
 
 ## 🐞 Debugging Protocol (Level 2)
 When encountering errors, test failures, or unexpected behavior, follow this structured debugging approach:

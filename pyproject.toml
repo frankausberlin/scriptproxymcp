@@ -9,7 +9,6 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "fastmcp>=3.1.1",
-    "mypy>=1.19.1",
 ]
 
 [project.scripts]
@@ -23,7 +22,10 @@ build-backend = "uv_build"
 dev = [
     "pytest>=9.0.2",
     "ruff>=0.15.7",
+    "basedpyright>=0.1.0",
     "colorlog>=6.8.2",
+    "bump-my-version>=0.20.0",
+    "pre-commit>=4.3.0",
 ]
 
 [tool.bumpversion]
@@ -36,3 +38,8 @@ message = "chore: bump version from {current_version} to {new_version}"
 filename = "pyproject.toml"
 search = 'version = "{current_version}"'
 replace = 'version = "{new_version}"'
+
+[tool.basedpyright]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+include = ["src", "tests"]

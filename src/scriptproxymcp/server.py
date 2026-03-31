@@ -37,8 +37,9 @@ logging.basicConfig(
 
 logger = logging.getLogger("MCPScriptProxy")
 
-# Default folder
-DEFAULT_SERVER_FOLDER = "./demo/arithmeticmcp"
+# Default folder - use Path relative to this module, not CWD
+_DEFAULT_ROOT = Path(__file__).parent.parent.parent
+DEFAULT_SERVER_FOLDER = str(_DEFAULT_ROOT / "demo" / "arithmeticmcp")
 # Mandatory server config file
 MCP_PROXY_CONFIG = "mcpproxy.md"
 
@@ -423,9 +424,11 @@ class MCPScriptProxy:
 
     def _register_tools(self) -> None:
         """Register script tools with the MCP server."""
+        mcp = self.mcp
+        assert mcp is not None
         for script in self.scripts:
             tool_func = create_tool_function(script)
-            self.mcp.add_tool(
+            mcp.add_tool(
                 tool_func,
                 name=script.tool_name,
                 description=script.description,
@@ -434,10 +437,12 @@ class MCPScriptProxy:
 
     def _register_skill_resources(self) -> None:
         """Register skill resources with the MCP server."""
+        mcp = self.mcp
+        assert mcp is not None
 
         def register_skill(s: SkillInfo) -> None:
             # Resource for the skill's SKILL.md
-            @self.mcp.resource(f"skills://{s.name}/SKILL.md")
+            @mcp.resource(f"skills://{s.name}/SKILL.md")
             def get_skill_md() -> str:
                 """Returns the content of the SKILL.md file."""
                 skill_md_path = s.path / "SKILL.md"
@@ -447,7 +452,7 @@ class MCPScriptProxy:
                     return f"Error: Could not read SKILL.md: {e}"
 
             # Resource for skill files
-            @self.mcp.resource(f"skills://{s.name}/{{file_path}}")
+            @mcp.resource(f"skills://{s.name}/{{file_path}}")
             def get_skill_file(file_path: str) -> str:
                 """Returns content of a file in the skill folder."""
                 full_path = s.path / file_path
@@ -464,7 +469,7 @@ class MCPScriptProxy:
             for script in s.scripts:
                 tool_func = create_tool_function(script)
                 tool_name = f"{s.name}_{script.tool_name}"
-                self.mcp.add_tool(
+                mcp.add_tool(
                     tool_func,
                     name=tool_name,
                     description=f"[{s.name}] {script.description}",
@@ -476,9 +481,11 @@ class MCPScriptProxy:
 
     def _register_prompts(self) -> None:
         """Register prompts from .prompt files."""
+        mcp = self.mcp
+        assert mcp is not None
 
         def register_prompt(p: PromptInfo) -> None:
-            @self.mcp.prompt(name=p.name, description=p.description)
+            @mcp.prompt(name=p.name, description=p.description)
             def prompt_func() -> str:
                 return p.template
 
@@ -489,11 +496,11 @@ class MCPScriptProxy:
 
     def _register_skill_prompts(self) -> None:
         """Register prompts generated from skills."""
+        mcp = self.mcp
+        assert mcp is not None
 
         def register_skill_prompt(s: SkillInfo, text: str) -> None:
-            @self.mcp.prompt(
-                name=f"{s.name}_skill", description=f"Use the {s.name} skill"
-            )
+            @mcp.prompt(name=f"{s.name}_skill", description=f"Use the {s.name} skill")
             def prompt_func() -> str:
                 return text
 
