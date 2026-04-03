@@ -1,6 +1,6 @@
 [project]
 name = "scriptproxymcp"
-version = "0.3.0"
+version = "0.3.0"  # project-version
 description = "MCP server proxy that exposes local scripts (Python, Bash, etc.) as tools for LLMs"
 readme = "README.md"
 authors = [
@@ -29,6 +29,7 @@ dev = [
     "pytest-cov>=7.1.0",
 ]
 
+# ── bump-my-version ──────────────────────────────────────────────────────────
 [tool.bumpversion]
 current_version = "0.3.0"
 commit = true
@@ -37,10 +38,37 @@ message = "chore: bump version from {current_version} to {new_version}"
 
 [[tool.bumpversion.files]]
 filename = "pyproject.toml"
-search = 'version = "{current_version}"'
-replace = 'version = "{new_version}"'
+search = 'version = "{current_version}"  # project-version'
+replace = 'version = "{new_version}"  # project-version'
 
+[[tool.bumpversion.files]]
+filename = "src/scriptproxymcp/__init__.py"
+search = '__version__ = "{current_version}"'
+replace = '__version__ = "{new_version}"'
+
+# ── ruff ─────────────────────────────────────────────────────────────────────
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF"]
+# D (pydocstyle) omitted intentionally — enable when docstring coverage improves
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["scriptproxymcp"]
+
+# ── pytest ───────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
+# ── basedpyright ─────────────────────────────────────────────────────────────
 [tool.basedpyright]
 pythonVersion = "3.12"
 typeCheckingMode = "standard"
 include = ["src", "tests"]
+venvPath = "."
+venv = ".venv"

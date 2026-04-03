@@ -59,9 +59,7 @@ class TestMCPScriptProxyInit:
         server = MCPScriptProxy(str(tmp_path))
         assert str(server.folder_path) == str(tmp_path.resolve())
 
-    def test_relative_path_resolution(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_relative_path_resolution(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test that relative paths starting with ./ or ../ are resolved relative to script dir."""
         # Change to a different directory to simulate MCP Inspector scenario
         with tempfile.TemporaryDirectory() as tmp_cwd:
@@ -201,12 +199,8 @@ class TestScanScripts:
         subdir = tmp_path / "subdir"
         subdir.mkdir()
 
-        (tmp_path / "script1.sh").write_text(
-            "#mcp@name: s1\n#mcp@description: Script 1\n"
-        )
-        (subdir / "script2.sh").write_text(
-            "#mcp@name: s2\n#mcp@description: Script 2\n"
-        )
+        (tmp_path / "script1.sh").write_text("#mcp@name: s1\n#mcp@description: Script 1\n")
+        (subdir / "script2.sh").write_text("#mcp@name: s2\n#mcp@description: Script 2\n")
 
         server = MCPScriptProxy(str(tmp_path))
         scripts = server._scan_scripts()
@@ -218,9 +212,7 @@ class TestScanScripts:
 
     def test_ignores_scripts_without_metadata(self, tmp_path: Path) -> None:
         """Test that scripts without #mcp@ metadata are ignored."""
-        (tmp_path / "valid.sh").write_text(
-            "#mcp@name: valid\n#mcp@description: Valid\n"
-        )
+        (tmp_path / "valid.sh").write_text("#mcp@name: valid\n#mcp@description: Valid\n")
         content = "# Just a comment\n"
         content += "echo 'no metadata'"
         (tmp_path / "invalid.sh").write_text(content)
@@ -239,9 +231,7 @@ class TestScanSkills:
         """Test that skill folders are found."""
         skill_dir = tmp_path / "my_skill"
         skill_dir.mkdir()
-        (skill_dir / "SKILL.md").write_text(
-            "---\nname: my-skill\ndescription: Test skill\n---\n# My Skill"
-        )
+        (skill_dir / "SKILL.md").write_text("---\nname: my-skill\ndescription: Test skill\n---\n# My Skill")
 
         server = MCPScriptProxy(str(tmp_path))
         skills = server._scan_skills()
@@ -268,9 +258,7 @@ class TestScanSkills:
         (skill_dir / "SKILL.md").write_text("---\nname: test\n---\n# Test")
         scripts_dir = skill_dir / "scripts"
         scripts_dir.mkdir()
-        (scripts_dir / "helper.sh").write_text(
-            "#mcp@name: help\n#mcp@description: Help\n"
-        )
+        (scripts_dir / "helper.sh").write_text("#mcp@name: help\n#mcp@description: Help\n")
 
         server = MCPScriptProxy(str(tmp_path))
         skills = server._scan_skills()

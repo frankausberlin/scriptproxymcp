@@ -116,9 +116,7 @@ class TestExecuteScript:
             execute_script(script_path, [], tmp_path)
 
     @patch("scriptproxymcp.scriptexecute.subprocess.run")
-    def test_execute_script_error_without_stderr(
-        self, mock_run: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_execute_script_error_without_stderr(self, mock_run: MagicMock, tmp_path: Path) -> None:
         """Verify errors include the exit code when stderr is empty."""
         mock_result = MagicMock()
         mock_result.returncode = 127
@@ -132,9 +130,7 @@ class TestExecuteScript:
             execute_script(script_path, [], tmp_path)
 
     @patch("scriptproxymcp.scriptexecute.subprocess.run")
-    def test_execute_script_sets_askpass_environment(
-        self, mock_run: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_execute_script_sets_askpass_environment(self, mock_run: MagicMock, tmp_path: Path) -> None:
         """Verify askpass-related environment variables reach admin scripts."""
         mock_result = MagicMock()
         mock_result.returncode = 0
@@ -226,9 +222,7 @@ class TestCreateToolFunction:
         assert "second_num" in param_names
 
     @patch("scriptproxymcp.scriptexecute.execute_script")
-    def test_create_tool_function_passes_risk_info(
-        self, mock_execute_script: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_create_tool_function_passes_risk_info(self, mock_execute_script: MagicMock, tmp_path: Path) -> None:
         """Verify risk info providers preserve explicit parameters."""
         mock_execute_script.return_value = "done"
         script_path = tmp_path / "calculator.sh"

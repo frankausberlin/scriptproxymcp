@@ -1,4 +1,11 @@
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
   - repo: local
     hooks:
       - id: ruff-check
@@ -6,16 +13,10 @@ repos:
         entry: uv run ruff check --force-exclude
         language: system
         types_or: [python, pyi]
-        require_serial: true
       - id: ruff-format
         name: ruff format
-        entry: uv run ruff format --check --force-exclude
+        entry: uv run ruff format --force-exclude
         language: system
         types_or: [python, pyi]
-        require_serial: true
-      - id: basedpyright
-        name: basedpyright
-        entry: uv run basedpyright
-        language: system
-        types_or: [python, pyi]
-        pass_filenames: false
+# Note: basedpyright runs in `just check` and CI, not as a pre-commit hook.
+# Full-codebase type checking on every commit is too slow for interactive work.

@@ -11,8 +11,9 @@ import json
 import logging
 import os
 import re
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 from mcp.server.fastmcp import FastMCP
 
@@ -35,10 +36,7 @@ if TYPE_CHECKING:
 # Basic configuration (once in the script)
 logging.basicConfig(
     level=logging.INFO,
-    format=(
-        "%(asctime)s - %(name)s [%(module)s.%(funcName)s:%(lineno)d] - "
-        "%(levelname)s - %(message)s"
-    ),
+    format=("%(asctime)s - %(name)s [%(module)s.%(funcName)s:%(lineno)d] - %(levelname)s - %(message)s"),
 )
 
 logger = logging.getLogger("MCPScriptProxy")
@@ -96,10 +94,7 @@ class MCPScriptProxy:
 
         # Determine server folder with priority
         folder = (
-            known.server_folder
-            or known.server_folder_arg
-            or os.environ.get("SERVER_FOLDER")
-            or DEFAULT_SERVER_FOLDER
+            known.server_folder or known.server_folder_arg or os.environ.get("SERVER_FOLDER") or DEFAULT_SERVER_FOLDER
         )
 
         return folder
@@ -114,9 +109,7 @@ class MCPScriptProxy:
 
         # If path is relative and starts with ./ or ../, resolve relative
         # to script directory
-        if not folder_path_obj.is_absolute() and (
-            folder_path.startswith("./") or folder_path.startswith("../")
-        ):
+        if not folder_path_obj.is_absolute() and (folder_path.startswith("./") or folder_path.startswith("../")):
             script_dir = Path(__file__).parent.parent.parent
             folder_path_obj = script_dir / folder_path
             msg = f"Resolved relative path '{folder_path}' to '{folder_path_obj}'"
@@ -158,8 +151,7 @@ class MCPScriptProxy:
         self.server_info = self._read_mcpproxy_md()
         if not self.server_info:
             logger.error(
-                f"mcpproxy.md not found in {self.folder_path}. "
-                "This file is required for server configuration."
+                f"mcpproxy.md not found in {self.folder_path}. This file is required for server configuration."
             )
             return False
 
@@ -202,10 +194,7 @@ class MCPScriptProxy:
             # Rest of content is the description
             desc_lines = [line.strip() for line in lines if line.strip()]
             # Skip first line (could be a heading) and join the rest
-            if len(desc_lines) > 1:
-                description = " ".join(desc_lines[1:])
-            else:
-                description = desc_lines[0] if desc_lines else ""
+            description = " ".join(desc_lines[1:]) if len(desc_lines) > 1 else desc_lines[0] if desc_lines else ""
 
             return ServerInfo(
                 name=server_name,
@@ -542,8 +531,7 @@ class MCPScriptProxy:
                 return RiskInfo(
                     purpose="Read system information or logs",
                     risk="low",
-                    description="This command reads system information "
-                    "without modifying anything.",
+                    description="This command reads system information without modifying anything.",
                 )
 
         # Medium risk commands - service management, non-destructive changes
@@ -562,8 +550,7 @@ class MCPScriptProxy:
                 return RiskInfo(
                     purpose="Manage system services or configuration",
                     risk="medium",
-                    description="This command may affect running services "
-                    "or modify system configuration.",
+                    description="This command may affect running services or modify system configuration.",
                 )
 
         # High risk commands - destructive operations
@@ -580,8 +567,7 @@ class MCPScriptProxy:
                 return RiskInfo(
                     purpose="Potentially destructive operation",
                     risk="high",
-                    description="WARNING: This command may cause data loss "
-                    "or system instability!",
+                    description="WARNING: This command may cause data loss or system instability!",
                 )
 
         # Default

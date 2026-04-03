@@ -5,8 +5,9 @@ import logging
 import os
 import re
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from scriptproxymcp.datatypes import RiskInfo, ScriptInfo
 

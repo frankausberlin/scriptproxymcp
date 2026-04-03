@@ -35,3 +35,6 @@ jobs:
 
       - name: Run stack quality gate
         run: just check
+
+      - name: Security audit
+        run: uvx pip-audit

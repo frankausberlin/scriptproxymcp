@@ -1,6 +1,8 @@
 # 🤖 Agent Guide: ScriptProxyMCP
 
-## 🎯 Project goal
+Welcome, AI Agent! You are operating within the **Luxurious Python Stack** (Level 2: Project Environment). This means strict rules apply to dependency management, environment activation, and versioning. Read this document carefully before making any changes.
+
+## 🎯 Project Goal
 This package serves as an MCP server proxy to provide local scripts (Python, Bash, etc.) as tools for LLMs. Focus is on simplicity and security.
 
 ## 🏗️ Architecture & Conventions
@@ -10,8 +12,9 @@ This package serves as an MCP server proxy to provide local scripts (Python, Bas
   - `skillfolder.py` - scanning for skills (SkillFolder class)
   - `scriptexecute.py` - script execution
   - `datatypes.py` - type definitions (ScriptInfo, SkillInfo)
-- **Import style:** We use the `__init__.py` as a facade. External imports should run via the main package.
-- **Typing:** Strict type hinting is desired. `basedpyright` is the primary type checker.
+- **Import style:** We use `__init__.py` as a facade. External imports should run via the main package.
+- **Typing:** Strict type hinting is mandatory. `basedpyright` is the primary type checker.
+- **Docstrings:** Use Google-style docstrings for all public functions and classes.
 - **Logging:** Prefer structured logging with `colorlog` over ad-hoc `print()` debugging.
 
 ## 🛠️ Stack & Tooling (CRITICAL RULES)
@@ -22,13 +25,19 @@ This project is strictly managed by `uv`. **Do not use `pip`, `poetry`, or stand
    - Add dev tools: `uv add --dev <package>`
    - Sync environment: `uv sync`
 2. **Execution:** In scripts, automation, and CI, ALWAYS prefix commands with `uv run` to guarantee reproducibility (e.g., `uv run ruff check .`). In an interactive terminal with `direnv`-activated `.venv`, direct commands are acceptable.
-3. **Quality Gate:**
-   - Linting & Formatting: `uv run ruff check .` and `uv run ruff format --check .`
-   - Type Checking: `uv run basedpyright`
-   - Testing: `uv run pytest`
-   - Unified gate: `just check`
-4. **Versioning:** `bump-my-version` is used for releases. **Never change versions manually in `pyproject.toml`** - doing so causes version inconsistencies between `[project].version` and `[tool.bumpversion].current_version`.
-5. **bump-my-version config:** Use `message = "..."` in `[tool.bumpversion]`. Do **not** use `commit_args = "-m ..."`, because `bump-my-version` already manages the commit message internally and this can break release commits.
+3. **Quality Gate:** Run `just check` — this executes the full gate (lint, format check, type check, tests) in one step. Individual commands if needed:
+     - Linting & Formatting: `uv run ruff check .` / `uv run ruff format --check .`
+     - Auto-fix: `uv run ruff check --fix .` / `uv run ruff format .`
+     - Type Checking: `uv run basedpyright`
+     - Testing: `uv run pytest`
+     - Security audit: `just audit` (runs `uvx pip-audit` — ephemeral, not a dev dependency)
+
+## 🚀 Versioning & Releases
+We use `bump-my-version` for automated semantic versioning.
+- **NEVER** change versions manually in `pyproject.toml` or `__init__.py`. This breaks the CI/CD pipeline!
+- To bump a version, ensure the working tree is clean and run: `just bump patch|minor|major`.
+- The `bump` recipe enforces a clean working tree — commit all changes first.
+- Do **not** use `commit_args = "-m ..."` in the config, as it breaks internal commit management. Use `message = "..."` instead.
 
 ## 📜 Best practices for this repo
 1. **New tools:** When a new script execution feature is added, the tool definition in `scriptexecute.py` must be dynamically generated.
@@ -44,12 +53,15 @@ As an AI Agent, you must adhere to the following session state management:
 
 1. **Initialization:** At the absolute beginning of your task, read `SESSION.md` (if it exists) to understand the context, recent changes, and current roadmap. Then run `uv sync` to guarantee the environment is current.
 2. **Execution:** Perform your coding tasks, run tests, and ensure `just check` passes without errors.
-3. **Finalization:** Before ending your interaction or completing the task, **overwrite** `SESSION.md` with a concise summary of what was just achieved, any open issues, and the immediate next steps.
+3. **Finalization:** Before ending your interaction or completing the task:
+   - **Overwrite** `SESSION.md` with a concise summary of what was just achieved, any open issues, and the immediate next steps (current snapshot — volatile).
+   - **Append** a dated entry to `JOURNAL.md` with a brief summary of what was accomplished (persistent history — never overwrite).
 
 Quick reference:
 - Read context: `cat AGENTS.md && cat SESSION.md 2>/dev/null`
 - Sync env: `uv sync`
 - Full gate: `just check`
+- Security audit: `just audit`
 - Release: `just bump patch|minor|major` then `git push origin main --tags`
 
 ## 🐞 Debugging Protocol (Level 2)

@@ -115,12 +115,7 @@ class SkillFolder:
                 stripped = line.strip()
                 # Handle frontmatter markers
                 if stripped.startswith("---"):
-                    if in_frontmatter:
-                        # End of frontmatter
-                        in_frontmatter = False
-                    else:
-                        # Start of frontmatter
-                        in_frontmatter = True
+                    in_frontmatter = not in_frontmatter
                     continue
                 # Collect frontmatter lines
                 if in_frontmatter:

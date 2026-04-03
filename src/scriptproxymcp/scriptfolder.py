@@ -20,7 +20,7 @@ class ScriptFolder:
     def scan(self):
         logger.info("\nStart scan")
         # Maximum size in bytes
-        MAX_SIZE = 1_000_000
+        max_size = 1_000_000
 
         for item in self.path.iterdir():
             # 1. Check if file
@@ -28,7 +28,7 @@ class ScriptFolder:
                 continue
 
             # 2. Check if not too long (Größenprüfung)
-            if item.stat().st_size > MAX_SIZE:
+            if item.stat().st_size > max_size:
                 continue
 
             # 3. Check if '#mcp@description' inside
@@ -46,9 +46,9 @@ class ScriptFolder:
                 continue
 
             # 5. create script info
-            tmpInfo = self.parse_script(item)
-            if tmpInfo:
-                self.scripts.append(tmpInfo)
+            tmp_info = self.parse_script(item)
+            if tmp_info:
+                self.scripts.append(tmp_info)
                 logger.info(f"Valid file found: {item.name}")
 
         self.isScanned = True
@@ -56,9 +56,7 @@ class ScriptFolder:
 
     def parse_script(self, file_path: Path) -> ScriptInfo | None:
         """Parse a script file and extract its metadata."""
-        info = ScriptInfo(
-            tool_name="", path_str=str(file_path), description="", params=[]
-        )
+        info = ScriptInfo(tool_name="", path_str=str(file_path), description="", params=[])
 
         try:
             with open(file_path, encoding="utf-8") as f:
