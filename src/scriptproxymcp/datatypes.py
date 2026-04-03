@@ -42,3 +42,12 @@ class ServerInfo:
     name: str
     description: str = ""
     folder: Path | None = None
+
+
+@dataclass
+class RiskInfo:
+    """Risk assessment information from sampling analysis."""
+
+    purpose: str = ""
+    risk: str = "unknown"  # low, medium, high, unknown
+    description: str = ""

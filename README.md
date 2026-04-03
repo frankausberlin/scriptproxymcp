@@ -105,7 +105,14 @@ Within skill folders, the server scans `scripts/` for `.sh` files with `#mcp@` m
 
 ```shell
 npx @modelcontextprotocol/inspector uv run scriptproxymcp ./demo/arithmeticmcp
+# or
+npx @modelcontextprotocol/inspector uv run scriptproxymcp ./demo/ubuntuadminmcp
+
 ```
+
+For the Ubuntu admin demo, run `askpasscheck` in MCP Inspector to force the
+askpass dialog even on systems where [`demo/ubuntuadminmcp/systemlogs.sh`](demo/ubuntuadminmcp/systemlogs.sh)
+can read logs without `sudo`.
 
 ## Two operating modes
 

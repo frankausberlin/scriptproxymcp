@@ -10,18 +10,24 @@ import argparse
 import json
 import logging
 import os
+import re
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from mcp.server.fastmcp import FastMCP
 
 from scriptproxymcp.datatypes import (
     PromptInfo,
+    RiskInfo,
     ScriptInfo,
     ServerInfo,
     SkillInfo,
 )
-from scriptproxymcp.scriptexecute import create_tool_function
+from scriptproxymcp.scriptexecute import (
+    create_tool_function,
+    detect_sudo_commands,
+    select_sudo_command,
+)
 
 if TYPE_CHECKING:
     pass
@@ -104,18 +110,28 @@ class MCPScriptProxy:
     ) -> None:
         self.mcp: FastMCP | None = None
         folder_path = server_folder or MCPScriptProxy.get_server_folder()
+        folder_path_obj = Path(folder_path)
+
+        # If path is relative and starts with ./ or ../, resolve relative
+        # to script directory
+        if not folder_path_obj.is_absolute() and (
+            folder_path.startswith("./") or folder_path.startswith("../")
+        ):
+            script_dir = Path(__file__).parent.parent.parent
+            folder_path_obj = script_dir / folder_path
+            msg = f"Resolved relative path '{folder_path}' to '{folder_path_obj}'"
+            logger.info(msg)
+
         # Convert to absolute path for reliable subprocess execution
-        self.folder_path = (
-            Path(folder_path).resolve()
-            if not Path(folder_path).is_absolute()
-            else Path(folder_path)
-        )
+        self.folder_path = folder_path_obj.resolve()
 
         # Initialize collections
         self.server_info: ServerInfo | None = None
         self.scripts: list[ScriptInfo] = []
         self.skills: list[SkillInfo] = []
         self.prompts: list[PromptInfo] = []
+        # Sampling support flag
+        self.sampling_enabled = True
 
     def scan(self) -> bool:
         """Scan the folder for server configuration.
@@ -126,15 +142,19 @@ class MCPScriptProxy:
         logger.info(f"Scanning server folder: {self.folder_path}")
 
         # 1. Check if folder exists
+        logger.info(f"Checking if folder exists: {self.folder_path.exists()}")
         if not self.folder_path.exists():
             logger.error(f"Server folder does not exist: {self.folder_path}")
             return False
 
+        is_dir = self.folder_path.is_dir()
+        logger.info(f"Checking if folder is directory: {is_dir}")
         if not self.folder_path.is_dir():
             logger.error(f"Server path is not a directory: {self.folder_path}")
             return False
 
         # 2. Read mcpproxy.md (required)
+        logger.info("Reading mcpproxy.md...")
         self.server_info = self._read_mcpproxy_md()
         if not self.server_info:
             logger.error(
@@ -146,14 +166,17 @@ class MCPScriptProxy:
         logger.info(f"Server name: {self.server_info.name}")
 
         # 3. Scan for scripts (recursive)
+        logger.info("Scanning for scripts...")
         self.scripts = self._scan_scripts()
         logger.info(f"Found {len(self.scripts)} script(s)")
 
         # 4. Scan for skills (subfolders with SKILL.md)
+        logger.info("Scanning for skills...")
         self.skills = self._scan_skills()
         logger.info(f"Found {len(self.skills)} skill(s)")
 
         # 5. Scan for prompts (*.prompt files)
+        logger.info("Scanning for prompts...")
         self.prompts = self._scan_prompts()
         logger.info(f"Found {len(self.prompts)} prompt(s)")
 
@@ -177,12 +200,12 @@ class MCPScriptProxy:
             server_name = self.folder_path.name
 
             # Rest of content is the description
-            description_lines = [line.strip() for line in lines if line.strip()]
+            desc_lines = [line.strip() for line in lines if line.strip()]
             # Skip first line (could be a heading) and join the rest
-            if len(description_lines) > 1:
-                description = " ".join(description_lines[1:])
+            if len(desc_lines) > 1:
+                description = " ".join(desc_lines[1:])
             else:
-                description = description_lines[0] if description_lines else ""
+                description = desc_lines[0] if desc_lines else ""
 
             return ServerInfo(
                 name=server_name,
@@ -238,7 +261,10 @@ class MCPScriptProxy:
                     if ":" in param_part:
                         name, param_type = param_part.split(":", 1)
                         params.append(
-                            {"name": name.strip(), "type": param_type.strip()}
+                            {
+                                "name": name.strip(),
+                                "type": param_type.strip(),
+                            }
                         )
                     else:
                         params.append({"name": param_part, "type": ""})
@@ -427,13 +453,143 @@ class MCPScriptProxy:
         mcp = self.mcp
         assert mcp is not None
         for script in self.scripts:
-            tool_func = create_tool_function(script)
+            tool_func = create_tool_function(
+                script,
+                self._build_risk_info_provider(script),
+            )
             mcp.add_tool(
                 tool_func,
                 name=script.tool_name,
                 description=script.description,
             )
             logger.info(f"Registered tool: {script.tool_name}")
+
+    def _build_risk_info_provider(
+        self,
+        script: ScriptInfo,
+    ) -> Callable[[], RiskInfo | None] | None:
+        """Build an optional risk info provider for a script.
+
+        Args:
+            script: The ScriptInfo object for the script.
+
+        Returns:
+            A zero-argument callable that returns RiskInfo, or None if the
+            script does not require elevated privileges.
+        """
+        script_path = Path(script.path_str)
+
+        # Read script content to detect sudo commands
+        try:
+            script_content = script_path.read_text(encoding="utf-8")
+            sudo_commands = detect_sudo_commands(script_content)
+        except (UnicodeDecodeError, OSError):
+            sudo_commands = []
+
+        if not sudo_commands:
+            return None
+
+        command = select_sudo_command(sudo_commands)
+        if command is None:
+            return None
+
+        def resolve_risk_info() -> RiskInfo | None:
+            """Resolve risk info lazily when the tool is executed."""
+            if not self.sampling_enabled:
+                return None
+
+            return self._perform_sampling(command, str(script_path))
+
+        return resolve_risk_info
+
+    def _perform_sampling(self, command: str, script_path: str) -> RiskInfo:
+        """Perform sampling to get risk assessment.
+
+        Args:
+            command: The sudo command to assess.
+            script_path: Path to the script.
+
+        Returns:
+            RiskInfo with the assessment result.
+        """
+        # Note: FastMCP doesn't support sampling natively.
+        # Sampling requires migration to low-level Server API.
+        # For now, always use fallback risk info.
+        logger.debug("Sampling not supported by FastMCP, using fallback risk info")
+        return self._get_fallback_risk_info(command)
+
+    def _get_fallback_risk_info(self, command: str) -> RiskInfo:
+        """Get fallback risk info based on regex command analysis.
+
+        Args:
+            command: The sudo command to analyze.
+
+        Returns:
+            RiskInfo with basic assessment.
+        """
+        command_lower = command.lower()
+
+        # Low risk commands - read-only operations
+        low_risk_patterns = [
+            (
+                r"\b(journalctl|systemctl\s+status|cat\s+/var/log|dmesg|"
+                r"uptime|free|df|top|ps|ls|cat|less|more|head|tail|grep|"
+                r"find|which|whereis|man|info)\b"
+            ),
+        ]
+        for pattern in low_risk_patterns:
+            if re.search(pattern, command_lower):
+                return RiskInfo(
+                    purpose="Read system information or logs",
+                    risk="low",
+                    description="This command reads system information "
+                    "without modifying anything.",
+                )
+
+        # Medium risk commands - service management, non-destructive changes
+        medium_risk_patterns = [
+            (
+                r"\b(systemctl\s+(restart|reload|stop|start|enable|disable|"
+                r"mask|unmask))\b"
+            ),
+            r"\b(service\s+\w+\s+(restart|reload|stop|start))\b",
+            r"\b(chmod|chown|chgrp)\b",
+            r"\b(mkdir|mv|cp|ln)\b",
+            r"\b(useradd|usermod|groupadd|groupmod)\b",
+        ]
+        for pattern in medium_risk_patterns:
+            if re.search(pattern, command_lower):
+                return RiskInfo(
+                    purpose="Manage system services or configuration",
+                    risk="medium",
+                    description="This command may affect running services "
+                    "or modify system configuration.",
+                )
+
+        # High risk commands - destructive operations
+        high_risk_patterns = [
+            r"\b(rm\s+(-rf?|--recursive))\b",
+            r"\b(mkfs|fdisk|parted|dd|shred)\b",
+            r"\b(chmod\s+777)\b",
+            r"\b(chown\s+root)\b",
+            r"\b(userdel|groupdel)\b",
+            r"\b(format|mkswap|swapon)\b",
+        ]
+        for pattern in high_risk_patterns:
+            if re.search(pattern, command_lower):
+                return RiskInfo(
+                    purpose="Potentially destructive operation",
+                    risk="high",
+                    description="WARNING: This command may cause data loss "
+                    "or system instability!",
+                )
+
+        # Default
+        return RiskInfo(
+            purpose=f"Execute: {command}",
+            risk="medium",
+            description="This command requires elevated privileges.",
+        )
 
     def _register_skill_resources(self) -> None:
         """Register skill resources with the MCP server."""
@@ -467,7 +623,10 @@ class MCPScriptProxy:
 
             # Register skill scripts as tools
             for script in s.scripts:
-                tool_func = create_tool_function(script)
+                tool_func = create_tool_function(
+                    script,
+                    self._build_risk_info_provider(script),
+                )
                 tool_name = f"{s.name}_{script.tool_name}"
                 mcp.add_tool(
                     tool_func,
@@ -500,7 +659,10 @@ class MCPScriptProxy:
         assert mcp is not None
 
         def register_skill_prompt(s: SkillInfo, text: str) -> None:
-            @mcp.prompt(name=f"{s.name}_skill", description=f"Use the {s.name} skill")
+            @mcp.prompt(
+                name=f"{s.name}_skill",
+                description=f"Use the {s.name} skill",
+            )
             def prompt_func() -> str:
                 return text
 

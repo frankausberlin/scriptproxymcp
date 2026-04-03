@@ -59,6 +59,27 @@ class TestMCPScriptProxyInit:
         server = MCPScriptProxy(str(tmp_path))
         assert str(server.folder_path) == str(tmp_path.resolve())
 
+    def test_relative_path_resolution(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that relative paths starting with ./ or ../ are resolved relative to script dir."""
+        # Change to a different directory to simulate MCP Inspector scenario
+        with tempfile.TemporaryDirectory() as tmp_cwd:
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(tmp_cwd)
+
+                # Create a relative path that should be resolved relative to script dir
+                script_dir = Path(__file__).parent.parent
+                demo_dir = script_dir / "demo" / "ubuntuadminmcp"
+
+                # Mock the script directory resolution
+                server = MCPScriptProxy("./demo/ubuntuadminmcp")
+                assert str(server.folder_path) == str(demo_dir.resolve())
+
+            finally:
+                os.chdir(original_cwd)
+
     def test_initial_collections(self, tmp_path: Path) -> None:
         """Test that collections are initialized empty."""
         server = MCPScriptProxy(str(tmp_path))

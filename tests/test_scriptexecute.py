@@ -7,13 +7,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from scriptproxymcp.datatypes import ScriptInfo
+from scriptproxymcp.datatypes import RiskInfo, ScriptInfo
 from scriptproxymcp.scriptexecute import (
     _build_input_schema,
     _create_dynamic_function,
     _map_script_type_to_json_type,
     create_tool_function,
     execute_script,
+    select_sudo_command,
     validate_params,
 )
 
@@ -26,7 +27,10 @@ class TestValidateParams:
         info = ScriptInfo(
             tool_name="test",
             path_str="/path",
-            params=[{"name": "a", "type": "int"}, {"name": "b", "type": "string"}],
+            params=[
+                {"name": "a", "type": "int"},
+                {"name": "b", "type": "string"},
+            ],
         )
         is_valid, error_msg = validate_params(info, a=1, b="hello")
 
@@ -34,11 +38,14 @@ class TestValidateParams:
         assert error_msg == ""
 
     def test_validate_params_returns_false_for_missing_params(self) -> None:
-        """Verify validate_params returns False when required params are missing."""
+        """Verify validate_params fails when required params are missing."""
         info = ScriptInfo(
             tool_name="test",
             path_str="/path",
-            params=[{"name": "a", "type": "int"}, {"name": "b", "type": "string"}],
+            params=[
+                {"name": "a", "type": "int"},
+                {"name": "b", "type": "string"},
+            ],
         )
         is_valid, error_msg = validate_params(info, a=1)
 
@@ -46,13 +53,17 @@ class TestValidateParams:
         assert "Missing required parameters: b" in error_msg
 
     def test_validate_params_returns_false_for_extra_params(self) -> None:
-        """Verify validate_params returns False when extra params are provided."""
+        """Verify validate_params fails when extra params are provided."""
         info = ScriptInfo(
             tool_name="test",
             path_str="/path",
             params=[{"name": "a", "type": "int"}],
         )
-        is_valid, error_msg = validate_params(info, a=1, extra_param="not_allowed")
+        is_valid, error_msg = validate_params(
+            info,
+            a=1,
+            extra_param="not_allowed",
+        )
 
         assert is_valid is False
         assert "Unknown parameters: extra_param" in error_msg
@@ -108,7 +119,7 @@ class TestExecuteScript:
     def test_execute_script_error_without_stderr(
         self, mock_run: MagicMock, tmp_path: Path
     ) -> None:
-        """Verify execute_script includes exit code in error when stderr is empty."""
+        """Verify errors include the exit code when stderr is empty."""
         mock_result = MagicMock()
         mock_result.returncode = 127
         mock_result.stdout = ""
@@ -120,6 +131,59 @@ class TestExecuteScript:
         with pytest.raises(RuntimeError, match="Script exited with code 127"):
             execute_script(script_path, [], tmp_path)
 
+    @patch("scriptproxymcp.scriptexecute.subprocess.run")
+    def test_execute_script_sets_askpass_environment(
+        self, mock_run: MagicMock, tmp_path: Path
+    ) -> None:
+        """Verify askpass-related environment variables reach admin scripts."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = "ok"
+        mock_result.stderr = ""
+        mock_run.return_value = mock_result
+
+        script_dir = tmp_path / "demo" / "ubuntuadminmcp"
+        script_dir.mkdir(parents=True)
+        script_path = script_dir / "systemlogs.sh"
+        script_path.write_text(
+            "#!/bin/bash\n"
+            'if [ -n "$TEST_SUDO_PASSWORD" ]; then\n'
+            '    echo "$TEST_SUDO_PASSWORD" | \\\n'
+            "        sudo -S -k --preserve-env=TEST_SUDO_PASSWORD id -u\n"
+            "else\n"
+            "    sudo -A -k id -u\n"
+            "fi\n"
+        )
+
+        risk_info = RiskInfo(
+            purpose="Read system logs",
+            risk="low",
+            description="Reads recent journal entries.",
+        )
+
+        result = execute_script(script_path, [], script_dir, risk_info)
+
+        assert result == "ok"
+        env = mock_run.call_args.kwargs["env"]
+        assert env["SUDO_ASKPASS"].endswith("askpass_gui.py")
+        assert env["SCRIPTPROXY_SUDO_COMMAND"] == "sudo -A -k id -u"
+        assert env["SCRIPTPROXY_RISK"] == "low"
+        assert env["SCRIPTPROXY_PURPOSE"] == "Read system logs"
+        assert env["SCRIPTPROXY_DESCRIPTION"] == "Reads recent journal entries."
+
+
+class TestSelectSudoCommand:
+    """Tests for sudo command selection."""
+
+    def test_prefers_askpass_command(self) -> None:
+        """Verify sudo -A commands are preferred for askpass previews."""
+        commands = [
+            "sudo -S -k --preserve-env=TEST_SUDO_PASSWORD id -u",
+            "sudo -A -k id -u",
+        ]
+
+        assert select_sudo_command(commands) == "sudo -A -k id -u"
+
 
 class TestCreateToolFunction:
     """Tests for create_tool_function factory function."""
@@ -129,7 +193,10 @@ class TestCreateToolFunction:
         info = ScriptInfo(
             tool_name="my_add_tool",
             path_str="/path/to/script.sh",
-            params=[{"name": "x", "type": "int"}, {"name": "y", "type": "int"}],
+            params=[
+                {"name": "x", "type": "int"},
+                {"name": "y", "type": "int"},
+            ],
             description="Adds two numbers",
         )
         tool_func = create_tool_function(info)
@@ -137,7 +204,7 @@ class TestCreateToolFunction:
         assert callable(tool_func)
 
     def test_create_tool_function_extracts_parameter_names(self) -> None:
-        """Verify the generated function has the correct parameter names in its signature."""
+        """Verify the generated function exposes the expected parameters."""
         info = ScriptInfo(
             tool_name="calculator",
             path_str="/path/to/script.sh",
@@ -157,6 +224,39 @@ class TestCreateToolFunction:
 
         assert "first_num" in param_names
         assert "second_num" in param_names
+
+    @patch("scriptproxymcp.scriptexecute.execute_script")
+    def test_create_tool_function_passes_risk_info(
+        self, mock_execute_script: MagicMock, tmp_path: Path
+    ) -> None:
+        """Verify risk info providers preserve explicit parameters."""
+        mock_execute_script.return_value = "done"
+        script_path = tmp_path / "calculator.sh"
+        script_path.write_text("#!/bin/bash\necho ok\n")
+        risk_info = RiskInfo(
+            purpose="Read logs",
+            risk="low",
+            description="Read-only operation.",
+        )
+
+        tool_func = create_tool_function(
+            ScriptInfo(
+                tool_name="calculator",
+                path_str=str(script_path),
+                params=[
+                    {"name": "first_num", "type": "int"},
+                    {"name": "second_num", "type": "int"},
+                ],
+                description="Calculator tool",
+            ),
+            lambda: risk_info,
+        )
+
+        result = tool_func(first_num=1, second_num=2)
+
+        assert result == "done"
+        risk_arg = mock_execute_script.call_args.args[3]
+        assert risk_arg == risk_info
 
 
 class TestCreateDynamicFunction:
@@ -215,7 +315,10 @@ class TestBuildInputSchema:
         info = ScriptInfo(
             tool_name="add",
             path_str="/path",
-            params=[{"name": "a", "type": "int"}, {"name": "b", "type": "string"}],
+            params=[
+                {"name": "a", "type": "int"},
+                {"name": "b", "type": "string"},
+            ],
         )
         schema = _build_input_schema(info)
 

@@ -1,10 +1,133 @@
 """Script execution functionality for Script Proxy MCP."""
 
+import json
+import logging
+import os
+import re
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
-from scriptproxymcp.datatypes import ScriptInfo
+from scriptproxymcp.datatypes import RiskInfo, ScriptInfo
+
+logger = logging.getLogger("MCPScriptProxy")
+
+# Regex patterns to detect sudo/pkexec commands in scripts
+SUDO_PATTERNS = [
+    r"\bsudo\b",
+    r"\bpkexec\b",
+]
+
+
+def detect_sudo_commands(script_content: str) -> list[str]:
+    """Detect all sudo/pkexec commands in a script.
+
+    Args:
+        script_content: The full script content as a string.
+
+    Returns:
+        List of unique sudo/pkexec commands found in the script.
+    """
+    commands = set()
+    for line in script_content.splitlines():
+        line = line.strip()
+        if line.startswith("#"):
+            continue
+        for pattern in SUDO_PATTERNS:
+            matches = re.findall(pattern, line)
+            if matches:
+                # Extract the full command (from sudo/pkexec to end of line)
+                for match in re.finditer(r"\b(sudo|pkexec)\s+(.+)$", line):
+                    commands.add(f"{match.group(1)} {match.group(2).strip()}")
+    return list(commands)
+
+
+def build_sampling_request(command: str, script_path: str) -> dict[str, Any]:
+    """Build a sampling request for risk assessment.
+
+    Args:
+        command: The sudo command to assess.
+        script_path: Path to the script containing the command.
+
+    Returns:
+        Dictionary with sampling request parameters.
+    """
+    prompt = (
+        f"Command: {command}\n"
+        f"Script: {script_path}\n\n"
+        "Please analyze this command and respond ONLY with a JSON object:\n"
+        '{"purpose": "What does this command do?", '
+        '"risk": "low|medium|high", '
+        '"description": "Brief description of the risk"}'
+    )
+    return {
+        "messages": [
+            {
+                "role": "user",
+                "content": {"type": "text", "text": prompt},
+            }
+        ],
+        "maxTokens": 500,
+    }
+
+
+def parse_sampling_response(response: str) -> RiskInfo:
+    """Parse the sampling response into RiskInfo.
+
+    Args:
+        response: The LLM response as a string.
+
+    Returns:
+        RiskInfo object with parsed data.
+    """
+    try:
+        # Try to extract JSON from the response
+        json_match = re.search(r"\{.*\}", response, re.DOTALL)
+        if json_match:
+            data = json.loads(json_match.group())
+            return RiskInfo(
+                purpose=data.get("purpose", ""),
+                risk=data.get("risk", "unknown"),
+                description=data.get("description", ""),
+            )
+    except (json.JSONDecodeError, AttributeError):
+        pass
+    return RiskInfo()
+
+
+def select_sudo_command(commands: list[str]) -> str | None:
+    """Select the most relevant sudo/pkexec command from a list.
+
+    Args:
+        commands: Detected sudo/pkexec commands.
+
+    Returns:
+        The preferred command, favoring askpass-enabled sudo usage
+        when present.
+    """
+    for command in commands:
+        if re.search(r"\bsudo\s+-A\b", command):
+            return command
+
+    return commands[0] if commands else None
+
+
+def _get_primary_sudo_command(script_path: Path) -> str | None:
+    """Extract the preferred sudo/pkexec command from a script.
+
+    Args:
+        script_path: Path to the script file.
+
+    Returns:
+        The preferred detected sudo/pkexec command, if any.
+    """
+    try:
+        script_content = script_path.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, OSError):
+        return None
+
+    sudo_commands = detect_sudo_commands(script_content)
+    return select_sudo_command(sudo_commands)
 
 
 def validate_params(info: ScriptInfo, **kwargs: Any) -> tuple[bool, str]:
@@ -25,11 +148,41 @@ def validate_params(info: ScriptInfo, **kwargs: Any) -> tuple[bool, str]:
 
 
 def execute_script(
-    script_path: Path | str, args: list[str], script_cwd: Path | str
+    script_path: Path | str,
+    args: list[str],
+    script_cwd: Path | str,
+    risk_info: RiskInfo | None = None,
 ) -> str:
-    """Execute the script with the given arguments and return stdout."""
+    """Execute the script with the given arguments and return stdout.
+
+    Args:
+        script_path: Path to the script to execute.
+        args: Arguments to pass to the script.
+        script_cwd: Working directory for script execution.
+        risk_info: Optional risk assessment info to pass to askpass.
+
+    Returns:
+        The script's stdout output.
+    """
     script_path = Path(script_path)
     script_cwd = Path(script_cwd)
+
+    # Prepare environment for sudo handling
+    env = os.environ.copy()
+    if "ubuntuadminmcp" in str(script_path):
+        # Set SUDO_ASKPASS for admin scripts
+        askpass_path = Path(__file__).parent / "askpass_gui.py"
+        env["SUDO_ASKPASS"] = str(askpass_path)
+
+        sudo_command = _get_primary_sudo_command(script_path)
+        if sudo_command:
+            env["SCRIPTPROXY_SUDO_COMMAND"] = sudo_command
+
+        # Pass risk info to askpass_gui via environment variables
+        if risk_info:
+            env["SCRIPTPROXY_RISK"] = risk_info.risk
+            env["SCRIPTPROXY_PURPOSE"] = risk_info.purpose
+            env["SCRIPTPROXY_DESCRIPTION"] = risk_info.description
 
     result = subprocess.run(
         [str(script_path), *args],
@@ -37,6 +190,7 @@ def execute_script(
         capture_output=True,
         text=True,
         check=False,
+        env=env,
     )
     if result.returncode != 0:
         error_msg = result.stderr.strip()
@@ -46,7 +200,10 @@ def execute_script(
     return result.stdout.strip()
 
 
-def create_tool_function(info: ScriptInfo):
+def create_tool_function(
+    info: ScriptInfo,
+    risk_info_provider: Callable[[], RiskInfo | None] | None = None,
+):
     """
     Factory function to create a tool function for a script.
 
@@ -63,7 +220,11 @@ def create_tool_function(info: ScriptInfo):
     # Create a function with explicit parameters matching the script
     # This allows FastMCP to infer the correct input schema
     tool_func = _create_dynamic_function(
-        info.tool_name, param_names, script_path, script_cwd
+        info.tool_name,
+        param_names,
+        script_path,
+        script_cwd,
+        risk_info_provider,
     )
 
     return tool_func
@@ -74,6 +235,7 @@ def _create_dynamic_function(
     param_names: list[str],
     script_path: Path,
     script_cwd: Path,
+    risk_info_provider: Callable[[], RiskInfo | None] | None = None,
 ):
     """
     Create a function with explicit parameters at runtime.
@@ -101,14 +263,17 @@ def {tool_name}({sig_params}):
     if not is_valid:
         raise ValueError(error_msg)
 
+    risk_info = resolve_risk_info() if resolve_risk_info is not None else None
     args = [str(kwargs[name]) for name in param_names]
-    return execute_script(script_path, args, script_cwd)
+    return execute_script(script_path, args, script_cwd, risk_info)
 """
 
     # Create the function in a local namespace
     local_namespace = {
         "validate_params": validate_params,
         "execute_script": execute_script,
+        "os": os,
+        "resolve_risk_info": risk_info_provider,
         "info": ScriptInfo(
             tool_name=tool_name,
             path_str=str(script_path),
