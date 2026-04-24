@@ -1,3 +1,5 @@
+"""Script folder scanner for extracting MCP tool metadata from shell scripts."""
+
 import logging
 from pathlib import Path
 
@@ -7,10 +9,18 @@ logger = logging.getLogger("MCPScriptProxy")
 
 
 class ScriptFolder:
+    """Scans a folder for shell scripts with #mcp@ metadata and extracts tool definitions."""
+
     def __str__(self):
+        """Return a human-readable representation of the script folder."""
         return f"ScriptFolder: {self.name} ({self.path})"
 
     def __init__(self, path: Path | str):
+        """Initialize the script folder scanner.
+
+        Args:
+            path: Path to the folder containing scripts.
+        """
         self.isScanned = False
         self.isValid = False
         self.path = path if isinstance(path, Path) else Path(path)
@@ -18,6 +28,10 @@ class ScriptFolder:
         self.name = self.path.name
 
     def scan(self):
+        """Scan the folder for valid scripts with #mcp@ metadata.
+
+        Skips files larger than 1 MiB and files missing required metadata tags.
+        """
         logger.info("\nStart scan")
         # Maximum size in bytes
         max_size = 1_000_000

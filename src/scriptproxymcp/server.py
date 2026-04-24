@@ -103,6 +103,11 @@ class MCPScriptProxy:
         self,
         server_folder: str | None = None,
     ) -> None:
+        """Initialize the MCP script proxy server.
+
+        Args:
+            server_folder: Path to the server folder. Falls back to get_server_folder() if None.
+        """
         self.mcp: FastMCP | None = None
         folder_path = server_folder or MCPScriptProxy.get_server_folder()
         folder_path_obj = Path(folder_path)
@@ -447,7 +452,7 @@ class MCPScriptProxy:
                 self._build_risk_info_provider(script),
             )
             mcp.add_tool(
-                tool_func,
+                tool_func,  # pyright: ignore[reportArgumentType]
                 name=script.tool_name,
                 description=script.description,
             )
@@ -585,7 +590,7 @@ class MCPScriptProxy:
         def register_skill(s: SkillInfo) -> None:
             # Resource for the skill's SKILL.md
             @mcp.resource(f"skills://{s.name}/SKILL.md")
-            def get_skill_md() -> str:
+            def get_skill_md() -> str:  # pyright: ignore[reportUnusedFunction]
                 """Returns the content of the SKILL.md file."""
                 skill_md_path = s.path / "SKILL.md"
                 try:
@@ -595,7 +600,7 @@ class MCPScriptProxy:
 
             # Resource for skill files
             @mcp.resource(f"skills://{s.name}/{{file_path}}")
-            def get_skill_file(file_path: str) -> str:
+            def get_skill_file(file_path: str) -> str:  # pyright: ignore[reportUnusedFunction]
                 """Returns content of a file in the skill folder."""
                 full_path = s.path / file_path
                 if not full_path.exists():
@@ -615,7 +620,7 @@ class MCPScriptProxy:
                 )
                 tool_name = f"{s.name}_{script.tool_name}"
                 mcp.add_tool(
-                    tool_func,
+                    tool_func,  # pyright: ignore[reportArgumentType]
                     name=tool_name,
                     description=f"[{s.name}] {script.description}",
                 )
@@ -631,7 +636,7 @@ class MCPScriptProxy:
 
         def register_prompt(p: PromptInfo) -> None:
             @mcp.prompt(name=p.name, description=p.description)
-            def prompt_func() -> str:
+            def prompt_func() -> str:  # pyright: ignore[reportUnusedFunction]
                 return p.template
 
         for prompt in self.prompts:
@@ -649,7 +654,7 @@ class MCPScriptProxy:
                 name=f"{s.name}_skill",
                 description=f"Use the {s.name} skill",
             )
-            def prompt_func() -> str:
+            def prompt_func() -> str:  # pyright: ignore[reportUnusedFunction]
                 return text
 
         for skill in self.skills:

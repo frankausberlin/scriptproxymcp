@@ -26,6 +26,11 @@ class SkillFolder:
     """
 
     def __init__(self, path: Path | str) -> None:
+        """Initialize the skill folder scanner.
+
+        Args:
+            path: Path to the skill folder or a parent folder containing skill subfolders.
+        """
         self.isScanned = False
         self.isValid = False
         self.path = path if isinstance(path, Path) else Path(path)

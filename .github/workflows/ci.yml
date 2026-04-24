@@ -25,7 +25,7 @@ jobs:
           cache-dependency-glob: "uv.lock"
 
       - name: Install just
-        uses: taiki-e/install-action@just
+        uses: extractions/setup-just@v2
 
       - name: Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
@@ -37,4 +37,4 @@ jobs:
         run: just check
 
       - name: Security audit
-        run: uvx pip-audit
+        run: uv run pip-audit

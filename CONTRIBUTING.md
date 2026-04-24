@@ -34,7 +34,7 @@ uv run pre-commit install
 ## Code Style
 
 - **Formatting & Linting**: Ruff (configured in `pyproject.toml`).
-- **Type Checking**: basedpyright in `standard` mode.
+- **Type Checking**: basedpyright in `strict` mode.
 - **Docstrings**: Google-style.
 - **Line length**: 120 characters.
 
@@ -52,5 +52,5 @@ git push origin master --tags
 ## Security Auditing
 
 ```bash
-just audit            # runs pip-audit via uvx (ephemeral)
+just audit            # runs pip-audit via uv run
 ```

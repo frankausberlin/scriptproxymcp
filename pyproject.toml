@@ -27,6 +27,7 @@ dev = [
     "bump-my-version>=0.20.0",
     "pre-commit>=4.3.0",
     "pytest-cov>=7.1.0",
+    "pip-audit>=2.10.0",
 ]
 
 # ── bump-my-version ──────────────────────────────────────────────────────────
@@ -34,6 +35,7 @@ dev = [
 current_version = "0.3.0"
 commit = true
 tag = true
+tag_name = "v{new_version}"
 message = "chore: bump version from {current_version} to {new_version}"
 
 [[tool.bumpversion.files]]
@@ -50,12 +52,12 @@ replace = '__version__ = "{new_version}"'
 [tool.ruff]
 target-version = "py312"
 line-length = 120
-src = ["src", "tests"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF"]
-# D (pydocstyle) omitted intentionally — enable when docstring coverage improves
-ignore = ["E501"]
+select = ["E", "F", "W", "I", "N", "D", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.lint.isort]
 known-first-party = ["scriptproxymcp"]
@@ -63,12 +65,14 @@ known-first-party = ["scriptproxymcp"]
 # ── pytest ───────────────────────────────────────────────────────────────────
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-v --tb=short"
+pythonpath = ["src"]
+addopts = "-ra -q"
 
 # ── basedpyright ─────────────────────────────────────────────────────────────
 [tool.basedpyright]
 pythonVersion = "3.12"
-typeCheckingMode = "standard"
+typeCheckingMode = "strict"
 include = ["src", "tests"]
 venvPath = "."
 venv = ".venv"
+reportPrivateUsage = false

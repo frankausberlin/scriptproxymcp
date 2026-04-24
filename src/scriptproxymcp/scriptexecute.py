@@ -29,7 +29,7 @@ def detect_sudo_commands(script_content: str) -> list[str]:
     Returns:
         List of unique sudo/pkexec commands found in the script.
     """
-    commands = set()
+    commands: set[str] = set()
     for line in script_content.splitlines():
         line = line.strip()
         if line.startswith("#"):
@@ -205,14 +205,14 @@ def create_tool_function(
     info: ScriptInfo,
     risk_info_provider: Callable[[], RiskInfo | None] | None = None,
 ):
-    """
-    Factory function to create a tool function for a script.
+    """Factory function to create a tool function for a script.
 
     Args:
-        info: ScriptInfo object with script metadata
+        info: ScriptInfo object with script metadata.
+        risk_info_provider: Optional callable that returns RiskInfo for privilege elevation.
 
     Returns:
-        A callable tool function with proper signature for FastMCP
+        A callable tool function with proper signature for FastMCP.
     """
     param_names = [p["name"] for p in info.params]
     script_path = Path(info.path_str)
@@ -238,8 +238,7 @@ def _create_dynamic_function(
     script_cwd: Path,
     risk_info_provider: Callable[[], RiskInfo | None] | None = None,
 ):
-    """
-    Create a function with explicit parameters at runtime.
+    """Create a function with explicit parameters at runtime.
 
     This ensures FastMCP infers the correct input schema with
     named parameters instead of a generic **kwargs.
@@ -288,13 +287,13 @@ def {tool_name}({sig_params}):
     return local_namespace[tool_name]
 
 
-def _build_input_schema(info: ScriptInfo) -> dict[str, Any]:
+def _build_input_schema(info: ScriptInfo) -> dict[str, Any]:  # pyright: ignore[reportUnusedFunction]
     """Build input schema for a tool based on its params."""
     param_names = [p["name"] for p in info.params]
     param_types = {p["name"]: p.get("type", "string") for p in info.params}
 
     properties = {}
-    required = []
+    required: list[str] = []
 
     for name in param_names:
         param_type = param_types.get(name, "string")

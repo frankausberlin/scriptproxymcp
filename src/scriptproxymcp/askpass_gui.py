@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-SUDO_ASKPASS GUI Script for ScriptProxyMCP
+"""SUDO_ASKPASS GUI Script for ScriptProxyMCP.
 
 Displays a GUI dialog for sudo password input, showing the command being executed
 along with risk assessment information from sampling analysis.
@@ -22,7 +21,10 @@ from tkinter import messagebox, ttk
 
 
 class SudoPasswordDialog:
+    """GUI dialog for sudo password input with risk assessment display."""
+
     def __init__(self):
+        """Initialize the dialog, reading environment variables for context."""
         self.result = None
         self.command = os.environ.get(
             "SCRIPTPROXY_SUDO_COMMAND",
@@ -41,12 +43,13 @@ class SudoPasswordDialog:
         self.root.eval("tk::PlaceWindow . center")
 
         # Make it modal
-        self.root.attributes("-topmost", True)
+        self.root.attributes("-topmost", True)  # pyright: ignore[reportUnknownMemberType]
         self.root.focus_force()
 
         self.setup_ui()
 
     def setup_ui(self):
+        """Build the dialog UI with risk indicator, command preview, and password input."""
         # Main frame
         main_frame = ttk.Frame(self.root, padding="20")
         main_frame.grid(row=0, column=0, sticky="nsew")
@@ -131,6 +134,7 @@ class SudoPasswordDialog:
         self.pwd_entry.bind("<Return>", lambda e: self.ok())
 
     def ok(self):
+        """Validate and store the entered password, then close the dialog."""
         password = self.pwd_entry.get()
         if not password:
             messagebox.showerror("Error", "Password cannot be empty")
@@ -140,16 +144,19 @@ class SudoPasswordDialog:
         self.root.quit()
 
     def cancel(self):
+        """Close the dialog without returning a password."""
         self.result = None
         self.root.quit()
 
     def run(self):
+        """Run the dialog main loop and return the password or None."""
         self.root.mainloop()
         self.root.destroy()
         return self.result
 
 
 def main():
+    """Entry point for the SUDO_ASKPASS helper script."""
     # Check for test password first (for headless testing)
     test_password = os.environ.get("TEST_SUDO_PASSWORD")
     if test_password:

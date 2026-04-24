@@ -215,7 +215,7 @@ class TestCreateToolFunction:
         # Check that the function has the expected parameters
         import inspect
 
-        sig = inspect.signature(tool_func)
+        sig = inspect.signature(tool_func)  # pyright: ignore[reportArgumentType]
         param_names = list(sig.parameters.keys())
 
         assert "first_num" in param_names
@@ -246,7 +246,7 @@ class TestCreateToolFunction:
             lambda: risk_info,
         )
 
-        result = tool_func(first_num=1, second_num=2)
+        result = tool_func(first_num=1, second_num=2)  # pyright: ignore[reportUnknownVariableType, reportCallIssue, reportOptionalCall]
 
         assert result == "done"
         risk_arg = mock_execute_script.call_args.args[3]
